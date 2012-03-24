@@ -46,6 +46,7 @@ class Generator
         $diff = microtime(TRUE) - $this->last_request;
         if($diff < 0.5)
             usleep((0.5 - $diff) * 1000000);
+        $this->last_request = microtime(TRUE);
         
         curl_setopt($this->curl_handle, CURLOPT_URL, $url);
         curl_setopt($this->curl_handle, CURLOPT_USERAGENT, self::UserAgent);
