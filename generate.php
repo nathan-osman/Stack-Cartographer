@@ -88,11 +88,14 @@ class Generator
     }
     
     // Returns a list of all pages containing API methods
-    private function GetMethodList()
+    private function GetMethodList($global)
     {
+        // We only want to fetch either the local or global methods
+        $selector = '//h2[contains(.,"' . ($global?'Network':'Per-Site') . '")]/following-sibling::div[1]//div[@class="method-name"]/a';
+        
         // Fetch all of the '.method-name a' elements
-        $links = $this->FetchDOM(self::Site . '/docs', '//div[@class="method-name"]/a');
-        if(!$links->length)
+        $links = $this->FetchDOM(self::Site . '/docs', $selector);
+        if($links === FALSE || !$links->length)
             throw new Exception('Unable to locate the method list in the DOM.');
         
         // Convert the results into an array and return it
@@ -104,7 +107,7 @@ class Generator
     }
     
     // Returns specific details about the method
-    private function GetMethodDetails($name, $doc_url)
+    private function GetMethodDetails($name, $doc_url, $global)
     {
         // Fetch the page with the details
         $document = $this->FetchDom(self::Site . $doc_url);
@@ -121,10 +124,21 @@ class Generator
             // Contruct the JSON data to return
             return array('path'        => $name,
                          'description' => $desc,
+                         'global'      => $global,
                          'parameters'  => $parameters);
         }
         else
             throw new Exception('Unable to apply regular expression to parameter script.');
+    }
+    
+    // Processes a list of methods
+    private function ProcessMethodList($unparsed_methods, &$methods, $global)
+    {
+        foreach($unparsed_methods as $name => $doc_url)
+        {
+            echo " - Parsing $name...\n";
+            $methods[] = $this->GetMethodDetails($name, $doc_url, $global);
+        }
     }
     
     // Generates the JSON that will be written to the output file
@@ -145,16 +159,14 @@ class Generator
         try
         {
             echo "Fetching list of all methods...\n";
-            $unparsed_methods = $this->GetMethodList();
-            echo count($unparsed_methods) . " methods found - parsing them one at a time...\n";
+            $unparsed_global_methods = $this->GetMethodList(TRUE);
+            $unparsed_site_methods   = $this->GetMethodList(FALSE);
+            echo count($unparsed_global_methods) + count($unparsed_site_methods) . " methods found - parsing them one at a time...\n";
             
             // Parse each of the methods we found
             $methods = array();
-            foreach($unparsed_methods as $name => $doc_url)
-            {
-                echo " - Parsing $name...\n";
-                $methods[] = $this->GetMethodDetails($name, $doc_url);
-            }
+            $this->ProcessMethodList($unparsed_global_methods, $methods, TRUE);
+            $this->ProcessMethodList($unparsed_site_methods,   $methods, FALSE);
             
             // Open the output file...
             echo "Writing results to output file...\n";
