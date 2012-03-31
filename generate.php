@@ -26,6 +26,9 @@ class Generator
     const Site       = 'http://api.stackexchange.com';
     const UserAgent  = 'Stack Cartographer 0.1';
     
+    // Blacklisted parameters
+    private static $parameter_blacklist = array('scope');
+    
     // Member variables
     private $curl_handle = null;
     private $last_request = 0;  // timestamp of the last request
@@ -120,6 +123,11 @@ class Generator
         if(preg_match('/var parameters = (.*?);/', $script, $matches))
         {
             $parameters = json_decode($matches[1], TRUE);
+            
+            // Remove any blacklisted parameters
+            $needs_removal = array_intersect($parameters, self::$parameter_blacklist);
+            foreach($needs_removal as $param)
+                unset($parameters[$param]);
             
             // Contruct the JSON data to return
             return array('path'        => $name,
