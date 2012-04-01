@@ -125,9 +125,9 @@ class Generator
             $parameters = json_decode($matches[1], TRUE);
             
             // Remove any blacklisted parameters
-            $needs_removal = array_intersect_key($parameters, self::$parameter_blacklist);
-            foreach($needs_removal as $param)
-                unset($parameters[$param]);
+            foreach(self::$parameter_blacklist as $param)
+                if(isset($parameters[$param]))
+                    unset($parameters[$param]);
             
             // Add the filter parameter manually
             $parameters['filter'] = 'string';
