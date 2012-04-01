@@ -125,9 +125,12 @@ class Generator
             $parameters = json_decode($matches[1], TRUE);
             
             // Remove any blacklisted parameters
-            $needs_removal = array_intersect($parameters, self::$parameter_blacklist);
+            $needs_removal = array_intersect_key($parameters, self::$parameter_blacklist);
             foreach($needs_removal as $param)
                 unset($parameters[$param]);
+            
+            // Add the filter parameter manually
+            $parameters['filter'] = 'string';
             
             // Contruct the JSON data to return
             return array('path'        => $name,
